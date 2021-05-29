@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crasleepish.springbootbackend.dao.mapper.ClassInfoMapper">
+    <select id="getClassInfoById" resultType="ClassInfo">
+        SELECT * FROM class_info WHERE id=#{id} LIMIT 1;
+    </select>
+
+    <select id="getAllClasses" resultType="ClassInfo">
+        SELECT * FROM class_info;
+    </select>
+
+    <insert id="insertClassInfo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO class_info(class_name) VALUES (#{className});
+    </insert>
+
+    <update id="updateClassInfo">
+        UPDATE class_info SET class_name=#{className} WHERE id=#{id};
+    </update>
+
+    <delete id="deleteClassInfoById">
+        DELETE FROM class_info WHERE id=#{id};
+    </delete>
+</mapper>

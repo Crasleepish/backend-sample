@@ -1,0 +1,41 @@
+server:
+  port: 8088
+spring:
+  datasource:
+#    这些是数据库的连接信息，${xxx:yyy}表示名为xxx的环境变量，默认值为yyy。生产环境下只需配置环境变量即可，不用改配置文件。
+#    characterEncoding指定连接数据库的字符编码，需要与数据库配置一致，默认utf8
+#    allowMultiQueries表示允许一次执行多个SQL用`;`连接的语句，默认为false
+    url: jdbc:mysql://${DB_HOST:192.168.117.130}:3306/webapp?characterEncoding=utf8&allowMultiQueries=true
+    username: ${DB_USER:root}
+    password: ${DB_PWD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      auto-commit: false
+      connection-timeout: 3000
+      max-lifetime: 60000
+      maximum-pool-size: 20
+  redis:
+    database: 0
+    host: ${DB_HOST:192.168.117.130}
+    port: 6379
+    password: whosyourdaddy
+    timeout: 10000
+    lettuce:
+      pool:
+        max-active: 1000
+        max-wait: 10000
+        max-idle: 500
+        min-idle: 100
+  cache:
+    type: redis
+
+mybatis:
+  config-location: classpath:mybatis-config.xml
+  mapper-locations: classpath:mappers/*.xml
+
+cache:
+  default:
+    expire-time: 86400
+  user:
+    expire-time: 3600
+    name: userCache

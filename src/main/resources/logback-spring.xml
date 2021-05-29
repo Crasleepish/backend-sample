@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 引入默认配置变量，方便后面引用 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+
+    <!-- 将传入的日志信息输出到控制台 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 日志输出采用的格式 -->
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 将传入的日志信息输出到文件，使用滚动文件输出方式 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 活动日志文件 -->
+        <file>log/logFile.log</file>
+        <!-- 以追加方式添加 -->
+        <append>true</append>
+        <!-- 使用时间滚动策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 归档文件以天为单位滚动，归档文件将自动被压缩为zip格式 -->
+            <fileNamePattern>log/logFile.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+            <!-- 保留30天的归档 -->
+            <maxHistory>30</maxHistory>
+            <!-- 所有归档文件的大小上限是512MB，如果超过将提前删除最老的归档文件 -->
+            <totalSizeCap>512MB</totalSizeCap>
+        </rollingPolicy>
+        <!-- 日志输出采用的格式 -->
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 异步输出 -->
+    <appender name ="ASYNC" class= "ch.qos.logback.classic.AsyncAppender">
+    <!-- 不丢失日志。默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>256</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref ="FILE"/>
+    </appender>
+
+    <!-- 加入Dao层的Debug日志，这样Mybatis产生的SQL会打印出来。所有logger接收的日志会按
+         name属性的层级传递给父logger，root是所有logger的父logger，如果addivity=false就不会传递给
+         父logger。
+         生产环境下直接将DEBUG改成INFO即可将SQL输出关闭。-->
+    <logger name="com.crasleepish.springbootbackend.dao" additivity="false" level="DEBUG">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="ASYNC" />
+    </logger>
+
+    <!-- 根logger，只设根logger，将接收所有class中的日志。接收级别为info及以上。将接收到的日志信息传到以下appender中 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="ASYNC" />
+    </root>
+</configuration>

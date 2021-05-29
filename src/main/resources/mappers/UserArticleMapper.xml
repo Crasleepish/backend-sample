@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crasleepish.springbootbackend.dao.mapper.UserArticleMapper">
+    <select id="getUserById" resultMap="userMap">
+        SELECT u.*, c.class_name as class_name
+        FROM users u LEFT JOIN class_info c ON u.class_id=c.id
+        WHERE u.id=#{id}
+        LIMIT 1;
+    </select>
+
+    <!-- sql参数#{}的名字必需与函数入参对应的名字完全一致 -->
+    <select id="getUsersByClassId" resultMap="userMap">
+        SELECT u.*,c.class_name as class_name
+        FROM users u LEFT JOIN class_info c ON u.class_id=c.id
+        WHERE c.id=#{clsId};
+    </select>
+
+    <insert id="addUser" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users(name, gender, age, class_id, type)
+        VALUES (#{name},
+                #{gender,javaType=UserGender,jdbcType=NUMERIC,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+                #{age},
+                #{classInfo.id,jdbcType=NUMERIC},
+                #{type,javaType=UserType,jdbcType=VARCHAR,typeHandler=org.apache.ibatis.type.EnumTypeHandler});
+    </insert>
+
+    <!--  动态sql示例，批量插入，由于自生成id会生成多个，因此无法用单个变量接收，所以不用useGeneratedKeys  -->
+    <insert id="batchAddUser" parameterType="list">
+        INSERT INTO users(name, gender, age, class_id, type) VALUES
+        <foreach collection="users" item="item" index="index" separator=",">
+            (#{item.name},
+             #{item.gender,javaType=UserGender,jdbcType=NUMERIC,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+             #{item.age},
+             #{item.classInfo.id,jdbcType=NUMERIC},
+             #{item.type,javaType=UserType,jdbcType=VARCHAR,typeHandler=org.apache.ibatis.type.EnumTypeHandler})
+        </foreach>
+    </insert>
+
+    <!-- 将函数入参转为sql参数需要经过typeHander，一般有默认规则，也可以手动指定typeHandler参数 -->
+    <!-- 如果一个列允许使用 null 值，并且会使用值为 null 的参数，就必须要指定 JDBC 类型（jdbcType） -->
+    <update id="updateUser">
+        UPDATE users
+        SET name=#{name},
+            gender=#{gender,javaType=UserGender,jdbcType=NUMERIC,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+            age=#{age},
+            class_id=#{classInfo.id,jdbcType=NUMERIC},
+            type=#{type,javaType=UserType,jdbcType=VARCHAR,typeHandler=org.apache.ibatis.type.EnumTypeHandler}
+        WHERE id=#{id};
+    </update>
+
+    <select id="getArticlesByAuthorId" resultMap="articleMap">
+        SELECT
+            a.id,a.title,a.author_id,a.bonus,a.commit_time,
+            u.name as author_name,
+            u.age as author_age,
+            u.class_id as author_class_id,
+            u.gender as author_gender,
+            u.`type` as author_type,
+            c.class_name as author_class_name
+        FROM articles a
+                 LEFT JOIN users u ON a.author_id=u.id
+                 LEFT JOIN class_info c ON u.class_id=c.id
+        WHERE a.author_id=#{auId}
+    </select>
+
+    <!-- 动态sql示例 -->
+    <select id="getArticlesByCond" resultMap="articleMap">
+        SELECT
+            a.id,a.title,a.author_id,a.bonus,a.commit_time,
+            u.name as author_name,
+            u.age as author_age,
+            u.class_id as author_class_id,
+            u.gender as author_gender,
+            u.`type` as author_type,
+            c.class_name as author_class_name
+        FROM
+            articles a
+                LEFT JOIN users u ON a.author_id = u.id
+                LEFT JOIN class_info c ON u.class_id = c.id
+        <where>
+            <if test="titlePattern != null">
+                AND title LIKE CONCAT('%',#{titlePattern},'%')
+            </if>
+            <if test="bonusMin != null">
+                <![CDATA[AND bonus >= #{bonusMin}]]>
+            </if>
+            <if test="bonusMax != null">
+                <![CDATA[AND bonus <= #{bonusMax}]]>
+            </if>
+            <if test="commitTimeMin != null">
+                <![CDATA[AND commit_time >= #{commitTimeMin, jdbcType=TIMESTAMP}]]>
+            </if>
+            <if test="commitTimeMax != null">
+                <![CDATA[AND commit_time < #{commitTimeMax, jdbcType=TIMESTAMP}]]>
+            </if>
+        </where>
+    </select>
+
+    <!-- id标签的作用和result一样，但指定id标签会提高性能，否则有较大性能损失，id一般映射主键 -->
+    <!-- association为嵌套结果集，用于映射级联属性 -->
+    <!-- 自动映射默认只对不含嵌套的结果集生效，自动映射开启时，对于没有手动配置的字段，会自动按字段名与成员名对应关系映射 -->
+    <!-- resultMap上可以添加autoMapping，强制开始自动映射 -->
+    <!-- 自动映射会自动将属性名为id的域映射为id标签 -->
+    <resultMap id="userMap" type="User">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="gender" column="gender" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+        <result property="age" column="age" />
+        <result property="type" column="type" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <association property="classInfo" javaType="ClassInfo">
+            <id property="id" column="class_id" />
+            <result property="className" column="class_name" />
+        </association>
+    </resultMap>
+
+    <!-- 嵌套结果集可以新定义，也可以引用现有的 -->
+    <!--  由于引用的结果集中的字段名可能与当前结果集中的字段名重名，可以在sql中给引用结果集对应的字段别名使用统一的prefix，
+      然后在association标签中使用columnPrefix来指定该prefix，相当于给引用结果集配置中的所有column字段前面加上该prefix-->
+    <resultMap id="articleMap" type="Article">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="bonus" column="bonus"/>
+        <result property="commitTime" column="commit_time"/>
+        <association property="author" resultMap="userMap" columnPrefix="author_"/>
+    </resultMap>
+
+</mapper>
